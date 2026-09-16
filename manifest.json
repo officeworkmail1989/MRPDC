@@ -4,8 +4,8 @@
   "description": "MRP DC Field Application Portal",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ff6b6b",
-  "theme_color": "#ff6b6b",
+  "background_color": "#6bffbf",
+  "theme_color": "#6bffbf",
   "orientation": "portrait",
   "icons": [
     {
