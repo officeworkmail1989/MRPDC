@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MRP DC</title>
+
+    <meta name="theme-color" content="#08090d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MRP DC">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968849.png">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ── THEME VARIABLES ── */
+        :root {
+            --bg: #08090d;
+            --top-bar-from: #0a0a0f;
+            --top-bar-to: #0a0a0f;
+            --text-on-bar: #22d3ee;
+            --net-online: #4ade80;
+            --net-offline: #f43f5e;
+            --offline-bg: #08090d;
+            --offline-card: #0e1015;
+            --fab-bg: rgba(34,211,238,0.12);
+            --neon: #22d3ee;
+            --neon-dim: rgba(34,211,238,0.35);
+            --neon-glow: 0 0 10px rgba(34,211,238,0.55), 0 0 22px rgba(34,211,238,0.25);
+        }
+        [data-theme="dark"] {
+            --bg: #08090d;
+            --top-bar-from: #0a0a0f;
+            --top-bar-to: #0a0a0f;
+        }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            transition: background 0.3s;
+        }
+
+        #app { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+        /* ── TOP BAR ── */
+        #top-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 56px;
+            background: var(--top-bar-from);
+            border-bottom: 1px solid rgba(34,211,238,0.25);
+            display: flex; align-items: center;
+            padding: 0 14px;
+            z-index: 8000;
+            gap: 10px;
+            box-shadow: 0 2px 16px rgba(34,211,238,0.08);
+        }
+        #top-bar-title {
+            font-size: 16px; font-weight: 700; color: var(--neon);
+            text-shadow: 0 0 8px rgba(34,211,238,0.45);
+            letter-spacing: 0.2px;
+        }
+        #top-bar-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+
+        .top-btn {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(34,211,238,0.06);
+            border: 1.5px solid var(--neon-dim);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px;
+            transition: background 0.2s, transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+            color: var(--neon);
+        }
+        .top-btn:hover  { background: rgba(34,211,238,0.14); transform: translateY(-1px); box-shadow: var(--neon-glow); }
+        .top-btn:active { transform: scale(0.9); }
+
+        #live-badge { display: flex; align-items: center; gap: 6px; }
+        #live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--net-online); box-shadow: 0 0 8px var(--net-online); }
+        #live-label { font-size: 11px; font-weight: 700; color: var(--net-offline); text-shadow: 0 0 6px rgba(244,63,94,0.5); letter-spacing: 0.5px; }
+        .online-pulse { animation: dotPulse 1.6s ease-in-out infinite; }
+
+        /* ── IFRAME ── */
+        #gas-portal {
+            border: none; width: 100%; flex: 1;
+            margin-top: 56px;
+            background: #fff;
+            transition: filter 0.3s;
+        }
+        [data-theme="dark"] #gas-portal { filter: invert(0.92) hue-rotate(180deg); }
+
+        /* ── SPLASH SCREEN ── */
+        #splash {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 50% 30%, rgba(34,211,238,0.10), transparent 55%),
+                #08090d;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        #splash.fade-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+        .s-logo-ring {
+            width: 96px; height: 96px; border-radius: 20px;
+            background: rgba(34,211,238,0.06);
+            border: 1.5px solid var(--neon);
+            box-shadow: var(--neon-glow);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 22px;
+            padding: 8px;
+            animation: logoPop 2.2s ease-in-out infinite;
+        }
+        .s-logo-text { font-size: 13px; font-weight: 700; color: var(--neon); letter-spacing: -0.2px; text-align: center; text-shadow: 0 0 8px rgba(34,211,238,0.5); }
+        .s-name { font-size: 22px; font-weight: 700; color: #f4f4f5; margin-bottom: 6px; animation: fadeUp 0.6s 0.15s both; text-shadow: 0 0 12px rgba(34,211,238,0.25); }
+        .s-sub  { font-size: 13px; color: var(--neon); margin-bottom: 34px; animation: fadeUp 0.6s 0.3s both; opacity: 0.85; }
+        .s-progress-track { width: 200px; height: 4px; background: rgba(34,211,238,0.12); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+        .s-progress-bar   { height: 100%; width: 0%; background: var(--neon); box-shadow: 0 0 10px var(--neon); border-radius: 10px; transition: width 0.12s linear; }
+        .s-pct { font-size: 12px; color: rgba(244,244,245,0.6); font-weight: 600; }
+
+        /* ── OFFLINE FALLBACK PAGE ── */
+        #offline-page {
+            display: none;
+            position: fixed; inset: 0;
+            background: var(--offline-bg);
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 7000;
+            animation: fadeUp 0.4s ease;
+        }
+        #offline-page.show { display: flex; }
+        .offline-icon { font-size: 56px; margin-bottom: 16px; filter: drop-shadow(0 0 12px rgba(244,63,94,0.55)); animation: pulse 2s ease-in-out infinite; }
+        .offline-title { font-size: 21px; font-weight: 700; color: #f4f4f5; margin-bottom: 8px; }
+        .offline-sub   { font-size: 14px; color: rgba(244,244,245,0.55); text-align: center; margin-bottom: 32px; line-height: 1.6; }
+        .offline-retry {
+            padding: 13px 32px; border-radius: 10px;
+            background: rgba(244,63,94,0.08);
+            color: #f43f5e; font-size: 14px; font-weight: 700;
+            border: 1.5px solid #f43f5e; cursor: pointer;
+            box-shadow: 0 0 16px rgba(244,63,94,0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .offline-dots { display: flex; gap: 8px; margin-top: 40px; }
+        .offline-dots span {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--neon);
+            box-shadow: 0 0 8px var(--neon);
+            animation: blink 1.4s ease-in-out infinite;
+        }
+        .offline-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .offline-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* ── NOTIFICATION TOAST ── */
+        #notif-toast {
+            position: fixed; top: 84px; left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: #0e1015; color: var(--neon);
+            padding: 10px 18px; border-radius: 10px;
+            font-size: 13px; font-weight: 600;
+            z-index: 9998; opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: var(--neon-glow);
+            border: 1px solid var(--neon-dim);
+        }
+        #notif-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── PWA INSTALL BANNER ── */
+        #install-banner {
+            display: none;
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 28px); max-width: 420px;
+            background: #0e1015;
+            border-radius: 16px;
+            border: 1px solid var(--neon-dim);
+            box-shadow: var(--neon-glow);
+            padding: 16px; z-index: 9990;
+            animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        [data-theme="dark"] #install-banner { background: #0e1015; border-color: var(--neon-dim); }
+        .ib-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .ib-icon { width: 46px; height: 46px; border-radius: 12px; background: rgba(34,211,238,0.08); border: 1.5px solid var(--neon); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; color: var(--neon); }
+        .ib-title { font-size: 15px; font-weight: 700; color: #f4f4f5; margin-bottom: 3px; }
+        .ib-desc  { font-size: 12px; color: rgba(244,244,245,0.55); line-height: 1.45; }
+        [data-theme="dark"] .ib-title { color: #f4f4f5; }
+        [data-theme="dark"] .ib-desc  { color: rgba(244,244,245,0.55); }
+        .ib-btns { display: flex; justify-content: flex-end; gap: 9px; }
+        .ib-btn  { padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; }
+        .ib-later { background: rgba(255,255,255,0.05); color: rgba(244,244,245,0.7); border-color: rgba(255,255,255,0.12); }
+        .ib-now   { background: rgba(34,211,238,0.1); color: var(--neon); border-color: var(--neon); box-shadow: 0 0 12px rgba(34,211,238,0.35); }
+
+
+
+        /* ── KEYFRAMES ── */
+        @keyframes blink   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.25;transform:scale(0.8)} }
+        @keyframes logoPop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideUp { from{transform:translate(-50%,80px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
+        @keyframes pulse   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        @keyframes dotPulse{ 0%,100%{box-shadow:0 0 6px var(--net-online)} 50%{box-shadow:0 0 14px var(--net-online)} }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- Top Bar -->
+    <div id="top-bar">
+        <div id="top-bar-left">
+            <span id="top-bar-title">MRP Disconnection-Data</span>
+            <!-- Live / Offline Badge (Displayed inline without container style) -->
+            <div id="live-badge">
+                <div id="live-dot" class="online-pulse"></div>
+                <span id="live-label"></span>
+
+            
+            </div>
+        </div>
+
+        
+        
+
+       
+
+        <!-- Hard Reset Button -->
+        <div class="top-btn" id="reset-btn" onclick="hardReset()" title="অ্যাপ হার্ড রিসেট করুন">⟳</div>
+    </div>
+
+    <!-- iFrame (src খালি রাখা হয়েছে — registration confirm হওয়ার পরেই JS দিয়ে সেট হবে) -->
+    <iframe
+        id="gas-portal"
+        allow="camera; microphone; geolocation"
+        title="MRP Disconnection Data">
+    </iframe>
+
+    <!-- Welcome / Sign-in Screen (প্রথমবার বা token expire হলে দেখাবে) -->
+    <div id="welcome-screen" style="display:none; position:fixed; inset:0; z-index:9997; background:#08090d; flex-direction:column; align-items:center; justify-content:center; padding:28px; text-align:center;">
+        <div style="font-size:56px; margin-bottom:14px;">👋</div>
+        <div style="color:#f4f4f5; font-size:19px; font-weight:700; margin-bottom:10px;">স্বাগতম!</div>
+        <div style="color:rgba(244,244,245,0.6); font-size:13px; line-height:1.7; max-width:340px; margin-bottom:22px;">
+            App ব্যবহার করতে আপনার Google account দিয়ে sign in করুন। এডমিন অনুমোদন করলে আপনি App ব্যবহার করতে পারবেন।
+        </div>
+        <div id="gsi-button-container"></div>
+    </div>
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="s-logo-ring"><span class="s-logo-text">MRP CCC</span></div>
+        <div class="s-name">MRP Disconnection Database</div>
+        <div class="s-sub">Connecting…</div>
+        <div class="s-progress-track">
+            <div class="s-progress-bar" id="prog-bar"></div>
+        </div>
+        <div class="s-pct" id="prog-pct">0%</div>
+    </div>
+
+    <!-- Offline Fallback Page -->
+    <div id="offline-page">
+        <div class="offline-icon">📡</div>
+        <div class="offline-title">ইন্টারনেট নেই!</div>
+        <div class="offline-sub">আপনার নেটওয়ার্ক সংযোগ পাওয়া যাচ্ছে না।<br>WiFi বা Mobile Data চালু করে চেষ্টা করুন।</div>
+        <button class="offline-retry" onclick="retryConnection()">🔄 আবার চেষ্টা করুন</button>
+        <div class="offline-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notif-toast">🔔 Notification চালু হয়েছে!</div>
+
+    <!-- Install Banner -->
+    <div id="install-banner">
+        <div class="ib-row">
+            <div class="ib-icon">📲</div>
+            <div>
+                <div class="ib-title">MRP DC ইনস্টল করুন</div>
+                <div class="ib-desc">হোম স্ক্রিনে রাখুন — যেকোনো সময় এক ক্লিকে খুলুন</div>
+            </div>
+        </div>
+        <div class="ib-btns">
+            <button class="ib-btn ib-later" onclick="dismissBanner()">Cancel</button>
+            <button class="ib-btn ib-now"   onclick="triggerInstall()">Install</button>
+        </div>
+    </div>
+
+</div>
+<script>
+/* ── SERVICE WORKER ── */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => {
+                console.log('[PWA] SW registered');
+                window._swReg = reg;
+            })
+            .catch(e => console.warn('[PWA] SW failed:', e));
+    });
+}
+
+/* ── GOOGLE SIGN-IN (হালকা, Drive/Sheets permission চাইবে না) ──
+   এই button/One-Tap শুধু email/profile যাচাই করে, Drive/Sheets access
+   চায় না — তাই কোনো "Review Permissions" স্ক্রিন আসবে না। sign-in
+   এই wrapper পেজেই (top-level) হয়, তাই iframe-block সমস্যাও হয় না। */
+const GOOGLE_CLIENT_ID = "901465315065-ijdbutl4tf91dd0p9roj4621kpeiqte3.apps.googleusercontent.com";
+const IFRAME_SRC = "https://script.google.com/macros/s/AKfycbwID05WvXvfK-J4r5P1AW1RbW0dAqiLCZZNN01vdgEG2KcLIP6z9faOQavH4yrDYWSV/exec";
+
+// JWT (ID token) থেকে payload বের করা — exp ও email জানার জন্য
+function decodeJWT(token) {
+    try {
+        const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const json = decodeURIComponent(atob(base64).split('').map(
+            c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(json);
+    } catch (e) {
+        return null;
+    }
+}
+
+function loadAppWithToken(token) {
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('splash').style.display = 'flex';
+    document.getElementById('splash').classList.remove('fade-out');
+    document.getElementById('gas-portal').src = IFRAME_SRC + '?token=' + encodeURIComponent(token);
+    initSplashProgress();
+}
+
+function handleCredentialResponse(response) {
+    // ✅ token ও email সেভ করে রাখা হচ্ছে, যাতে পরেরবার আর account select করতে না হয়
+    const payload = decodeJWT(response.credential);
+    try {
+        localStorage.setItem('gsiToken', response.credential);
+        if (payload) {
+            if (payload.exp)   localStorage.setItem('gsiTokenExp', payload.exp);
+            if (payload.email) localStorage.setItem('gsiEmail', payload.email);
+        }
+    } catch (e) {}
+    loadAppWithToken(response.credential);
+}
+
+function showSignInScreen() {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('welcome-screen').style.display = 'flex';
+}
+
+function checkRegistration() {
+    // ১. আগের সেভ করা token এখনো valid থাকলে সরাসরি app খুলে দেওয়া (কোনো sign-in screen নেই)
+    try {
+        const savedToken = localStorage.getItem('gsiToken');
+        const savedExp   = parseInt(localStorage.getItem('gsiTokenExp') || '0', 10);
+        // 5 মিনিট buffer রেখে expiry চেক করা হচ্ছে
+        if (savedToken && savedExp && (savedExp - 300) > (Date.now() / 1000)) {
+            loadAppWithToken(savedToken);
+            return;
+        }
+    } catch (e) {}
+
+    // ২. token নেই বা মেয়াদোত্তীর্ণ — চুপচাপ (silent) আবার sign-in করার চেষ্টা
+    if (typeof google === 'undefined' || !google.accounts) {
+        setTimeout(checkRegistration, 300);
+        return;
+    }
+
+    let savedEmail = null;
+    try { savedEmail = localStorage.getItem('gsiEmail'); } catch (e) {}
+
+    const config = {
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: true,
+        itp_support: true
+    };
+    // ✅ আগের account-টাই স্বয়ংক্রিয়ভাবে বেছে নেওয়ার জন্য (একাধিক Gmail login থাকলেও)
+    if (savedEmail) config.login_hint = savedEmail;
+
+    google.accounts.id.initialize(config);
+
+    google.accounts.id.renderButton(
+        document.getElementById('gsi-button-container'),
+        { theme: 'filled_blue', size: 'large', width: 280, text: 'signin_with' }
+    );
+
+    // splash দেখিয়ে রাখা হচ্ছে যতক্ষণ silent sign-in-এর চেষ্টা চলছে
+    document.getElementById('splash').style.display = 'flex';
+    const sub = document.querySelector('.s-sub');
+    if (sub) sub.textContent = 'Signing in…';
+
+    google.accounts.id.prompt((notification) => {
+        // silent sign-in সম্ভব না হলে (প্রথমবার, বা session হারিয়ে গেলে) তখনই শুধু
+        // sign-in screen দেখানো হবে
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            showSignInScreen();
+        }
+    });
+
+    // নিরাপত্তা হিসেবে: 4 সেকেন্ডেও কিছু না হলে sign-in screen দেখানো
+    setTimeout(() => {
+        const portal = document.getElementById('gas-portal');
+        if (!portal.src) showSignInScreen();
+    }, 4000);
+}
+
+/* ── SPLASH PROGRESS BAR ── */
+const progBar = document.getElementById('prog-bar');
+const progPct = document.getElementById('prog-pct');
+const splash  = document.getElementById('splash');
+let pct = 0;
+let tick = null;
+
+function initSplashProgress() {
+    pct = 0;
+    progBar.style.width = '0%';
+    progPct.textContent = '0%';
+    clearInterval(tick);
+    tick = setInterval(() => {
+        pct += Math.random() * 14 + 4;
+        if (pct >= 100) { pct = 100; clearInterval(tick); }
+        progBar.style.width = pct + '%';
+        progPct.textContent = Math.round(pct) + '%';
+    }, 180);
+    setTimeout(hideSplash, 6000);
+}
+
+function hideSplash() {
+    if (!splash.classList.contains('fade-out')) {
+        pct = 100; progBar.style.width = '100%'; progPct.textContent = '100%';
+        clearInterval(tick);
+        setTimeout(() => splash.classList.add('fade-out'), 300);
+    }
+}
+document.getElementById('gas-portal').addEventListener('load', hideSplash);
+
+checkRegistration();
+
+/* ── HARD RESET (clears settings/cache + forces latest update) ── */
+const resetBtn = document.getElementById('reset-btn');
+
+async function hardReset() {
+    const ok = confirm('⚠️ এটি অ্যাপের সমস্ত সেটিংস ও ক্যাশে মুছে দেবে এবং সর্বশেষ আপডেট লোড করবে।\n\nআপনি কি নিশ্চিত?');
+    if (!ok) return;
+
+    resetBtn.style.pointerEvents = 'none';
+    resetBtn.textContent = '⏳';
+    showToast('♻️ রিসেট হচ্ছে…');
+
+    try {
+        // 1) Clear all local settings/data
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 2) Unregister the service worker so a fresh one takes over
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(reg => reg.unregister()));
+        }
+
+        // 3) Delete every cache (forces re-download of latest files on reload)
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+        }
+    } catch (err) {
+        console.warn('[Reset] error:', err);
+    }
+
+    // 4) Reload bypassing cache with a busting param so the newest update loads
+    setTimeout(() => {
+        window.location.href = window.location.pathname + '?reset=' + Date.now();
+    }, 400);
+}
+
+/* ── WHATSAPP REDIRECT FUNCTION ── */
+function openWhatsApp() {
+    const phoneNumber = "919153637208";
+    const customText = encodeURIComponent("হ্যালো এডমিন, আমি Raidighi CCC পোর্টাল থেকে যোগাযোগ করছি।");
+    const waUrl = `https://wa.me/${phoneNumber}?text=${customText}`;
+    window.open(waUrl, "_blank");
+    showToast("💬 হোয়াটসঅ্যাপ খোলা হচ্ছে...");
+}
+/* ── NATIVE SHARE ── */
+function doShare() {
+    const shareData = {
+        title: 'Raidighi CCC',
+        text: 'Raidighi CCC Portal — শেয়ার করুন!',
+        url: window.location.href
+    };
+    if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showToast('🔗 Link copied to clipboard!');
+        }).catch(() => {
+            showToast('📋 Link: ' + window.location.href);
+        });
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('notif-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+/* ── NETWORK STATUS → LIVE BADGE ── */
+const liveBadge = document.getElementById('live-badge');
+const liveDot   = document.getElementById('live-dot');
+const liveLabel = document.getElementById('live-label');
+const offPage   = document.getElementById('offline-page');
+
+
+function updateNet() {
+    if (navigator.onLine) {
+        liveBadge.classList.remove('offline-mode');
+        liveDot.classList.add('online-pulse');
+        liveDot.style.background = '#4ade80';
+        liveLabel.textContent = '';
+        offPage.classList.remove('show');
+    } else {
+        liveBadge.classList.add('offline-mode');
+        liveDot.classList.remove('online-pulse');
+        liveDot.style.background = '#f43f5e';
+        liveLabel.textContent = 'OFFLINE';
+        offPage.classList.add('show');
+    }
+}
+function retryConnection() {
+    if (navigator.onLine) { offPage.classList.remove('show'); document.getElementById('gas-portal').src += ''; }
+    else {
+        const btn = offPage.querySelector('.offline-retry');
+        btn.textContent = '⏳ চেক করছি…';
+        setTimeout(() => { btn.textContent = '🔄 আবার চেষ্টা করুন'; updateNet(); }, 2000);
+    }
+}
+window.addEventListener('online',  updateNet);
+window.addEventListener('offline', updateNet);
+updateNet();
+
+/* ── PWA INSTALL BANNER ── */
+const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    navigator.standalone === true ||
+    document.referrer.includes('android-app://') ||
+    localStorage.getItem('pwa_installed') === 'true';
+
+let deferredPrompt = null;
+const banner = document.getElementById('install-banner');
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt = e;
+    if (!isStandalone) showBanner();
+});
+if (!isStandalone) setTimeout(showBanner, 3000);
+
+function showBanner() {
+    if (!sessionStorage.getItem('banner_dismissed') && !isStandalone)
+        banner.style.display = 'block';
+}
+function dismissBanner() {
+    banner.style.display = 'none';
+    sessionStorage.setItem('banner_dismissed', 'true');
+}
+function triggerInstall() {
+    if (deferredPrompt) {
+        dismissBanner(); deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(r => {
+            if (r.outcome === 'accepted') localStorage.setItem('pwa_installed', 'true');
+            deferredPrompt = null;
+        });
+        return;
+    }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+        alert("📲 iOS-এ ইনস্টল:\n\n১. Safari-এর Share বোতামে ট্যাপ করুন\n২. 'Add to Home Screen' সিলেক্ট করুন\n৩. 'Add' চাপুন");
+    } else {
+        alert("📲 ইনস্টল:\n\n১. ব্রাউজারের ৩টি ডট মেনুতে ক্লিক করুন\n২. 'Install app' বা 'Add to Home screen' চাপুন");
+    }
+}
+window.addEventListener('appinstalled', () => {
+    localStorage.setItem('pwa_installed', 'true'); dismissBanner();
+});
+</script>
+</body>
+</html>
