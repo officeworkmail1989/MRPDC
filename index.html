@@ -228,6 +228,9 @@
 
        
 
+        <!-- App Share Button -->
+        <div class="top-btn" id="share-btn" onclick="doShare()" title="অ্যাপ শেয়ার করুন">📤</div>
+
         <!-- Hard Reset Button -->
         <div class="top-btn" id="reset-btn" onclick="hardReset()" title="অ্যাপ হার্ড রিসেট করুন">⟳</div>
     </div>
@@ -483,18 +486,19 @@ function openWhatsApp() {
 }
 /* ── NATIVE SHARE ── */
 function doShare() {
+    const cleanUrl = window.location.origin + window.location.pathname;
     const shareData = {
-        title: 'Raidighi CCC',
-        text: 'Raidighi CCC Portal — শেয়ার করুন!',
-        url: window.location.href
+        title: 'MRP DC',
+        text: 'MRP DC — Disconnection Data Portal। App-টি ব্যবহার করতে নিচের লিংকে যান:',
+        url: cleanUrl
     };
     if (navigator.share) {
         navigator.share(shareData).catch(() => {});
     } else {
-        navigator.clipboard.writeText(window.location.href).then(() => {
+        navigator.clipboard.writeText(cleanUrl).then(() => {
             showToast('🔗 Link copied to clipboard!');
         }).catch(() => {
-            showToast('📋 Link: ' + window.location.href);
+            showToast('📋 Link: ' + cleanUrl);
         });
     }
 }
